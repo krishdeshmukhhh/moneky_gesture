@@ -13,18 +13,25 @@ class GestureDetector:
         # Let's stick to the prompt's implied simple logic but relax it for "Think".
         return lm[finger_tip_idx].y < lm[finger_pip_idx].y
 
-    def detect_gesture(self, frame, multi_hand_landmarks, face_landmarks=None):
+    def detect_gesture(self, frame, multi_hand_landmarks, multi_face_landmarks=None):
         """
         Analyze logic to return gesture name.
         Args:
             frame: The current video frame (numpy array) for color analysis.
             multi_hand_landmarks: List of Hand landmarks.
-            face_landmarks: Single Face landmarks (if detected).
+            multi_face_landmarks: List of Face landmarks (if detected).
         """
-        if not multi_hand_landmarks and not face_landmarks:
+        # 0. SUPER GLOBAL PRIORITY: 2 People = Double
+        if multi_face_landmarks and len(multi_face_landmarks) >= 2:
+            return "Double"
+
+        if not multi_hand_landmarks and not multi_face_landmarks:
             return None
 
-        # 0. GLOBAL PRIORITY: Tongue Out (Mouth Open + Color Check)
+        # Prepare single face for other gestures
+        face_landmarks = multi_face_landmarks[0] if multi_face_landmarks else None
+
+        # 1. GLOBAL PRIORITY: Tongue Out (Mouth Open + Color Check)
         if face_landmarks:
             # Landmarks: 13 (Upper Lip Inner), 14 (Lower Lip Inner)
             # Reference: 10 (Top Head), 152 (Chin) for scale

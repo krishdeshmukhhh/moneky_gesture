@@ -36,7 +36,7 @@ def main():
     
     # Optimization: refine_landmarks=False is much faster
     face_mesh = mp_face_mesh.FaceMesh(
-        max_num_faces=1,
+        max_num_faces=2,
         refine_landmarks=False, 
         min_detection_confidence=0.5,
         min_tracking_confidence=0.5
@@ -132,7 +132,7 @@ def main():
                 cv2.circle(frame, (tx, ty), 10, (0, 255, 255), -1) # Yellow dot
             
         # Detect (Moved outside loop to allow face-only gestures like Tongue)
-        res = detector.detect_gesture(frame, results_hands.multi_hand_landmarks, face_landmarks)
+        res = detector.detect_gesture(frame, results_hands.multi_hand_landmarks, results_face.multi_face_landmarks)
         if res:
             detected_gesture = res
         
