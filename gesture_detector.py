@@ -31,21 +31,47 @@ class GestureDetector:
             # Average Height of Wrists
             avg_y = (h1[0].y + h2[0].y) / 2.0
             
-            # Logic A: High Hands (Scared)
-            # If hands are in upper half (e.g., < 0.55), assume Scared.
-            # This covers both "Clasped near face" and "Hands on cheeks on sides of face".
-            # We don't enforce close wrists for Scared anymore to allow "Home Alone" style.
-            if avg_y < 0.55:
-                # Optional: maybe check if palms are open or facing camera? 
-                # For now, 2 hands high is a strong enough signal for Scared.
-                return "Scared"
-            
-            # Logic B: Low Hands (Mad)
-            # If hands are low, we require them to be crossed/close (Folded Arms).
+            # Calculate Wrist Distance
             wrists_dist = np.sqrt((h1[0].x - h2[0].x)**2 + (h1[0].y - h2[0].y)**2)
             
-            if wrists_dist < 0.45: # Generous threshold for folded arms
-                return "Mad"
+            # Get Face Reference (Chin) if available
+            face_bottom_y = 0.5 # Default fallback
+            if face_landmarks:
+                # Landmark 152 is usually the chin in MediaPipe Face Mesh
+                face_bottom_y = face_landmarks.landmark[152].y
+
+            # Logic: Scared (Home Alone) -> Hands generally open, near face height
+            # Check if hands are roughly at or above the chin level
+            # And check if fingers are extended (Open Palm looks more Scared)
+            
+            # Quick open palm check for both hands
+            # We count extended fingers for each hand
+            fingers_open_h1 = sum([self._is_finger_extended(h1, i, i-2) for i in [8, 12, 16, 20]])
+            fingers_open_h2 = sum([self._is_finger_extended(h2, i, i-2) for i in [8, 12, 16, 20]])
+            
+            is_hands_open = (fingers_open_h1 >= 3) and (fingers_open_h2 >= 3)
+            
+            # Logic: Scared (Clasped Hands Low)
+            # User request: "Clasp hands together below neck"
+            # Condition: Wrists very close (touching/clasped) and below face
+            if wrists_dist < 0.15 and avg_y > face_bottom_y:
+                return "Scared"
+
+            # Logic: Scared (Home Alone - High)
+            # Existing logic: Hands near face height AND open palms
+            if avg_y < (face_bottom_y + 0.1) and is_hands_open:
+                return "Scared"
+            
+            # Logic: Mad (Folded Arms) -> LOW hands, Crossed, FISTS
+            # Must be distinguished from Clasped Hands (Scared).
+            # Folded arms usually have wrists separated (> 0.15).
+            
+            # Count open fingers for Mad check (should be low/fist)
+            is_hands_fists = (fingers_open_h1 <= 1) and (fingers_open_h2 <= 1)
+            
+            if 0.15 <= wrists_dist < 0.5 and is_hands_fists:
+                if avg_y > face_bottom_y:
+                    return "Mad"
 
         # 2. Single Hand Gestures (Idea vs Think)
         for hand_landmarks in multi_hand_landmarks:

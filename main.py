@@ -95,11 +95,7 @@ def main():
         
         # --- Visual Debug / Hitboxes ---
         
-        # Draw Scared Threshold Line (Y = 0.55)
-        thresh_y = int(h * 0.55)
-        cv2.line(frame, (0, thresh_y), (w, thresh_y), (0, 0, 255), 1)
-        cv2.putText(frame, "High/Low Line", (10, thresh_y - 5), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+
                     
         # Get Face Landmarks
         face_landmarks = None
