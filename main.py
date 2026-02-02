@@ -89,9 +89,14 @@ def main():
         # Convert for MediaPipe
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
+        # Optimization: Pass smaller frame to MediaPipe to boost FPS.
+        # Landmarks are normalized (0-1), so they map back to the original full-res frame perfectly.
+        # Resizing to 50% (360p) drastically reduces CPU usage.
+        frame_small = cv2.resize(frame_rgb, (0, 0), fx=0.5, fy=0.5)
+        
         # Process
-        results_hands = hands.process(frame_rgb)
-        results_face = face_mesh.process(frame_rgb)
+        results_hands = hands.process(frame_small)
+        results_face = face_mesh.process(frame_small)
         
         # --- Visual Debug / Hitboxes ---
         
