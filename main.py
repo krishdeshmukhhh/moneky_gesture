@@ -131,10 +131,10 @@ def main():
                 tx, ty = int(idx_tip.x * w), int(idx_tip.y * h)
                 cv2.circle(frame, (tx, ty), 10, (0, 255, 255), -1) # Yellow dot
             
-            # Detect
-            res = detector.detect_gesture(results_hands.multi_hand_landmarks, face_landmarks)
-            if res:
-                detected_gesture = res
+        # Detect (Moved outside loop to allow face-only gestures like Tongue)
+        res = detector.detect_gesture(frame, results_hands.multi_hand_landmarks, face_landmarks)
+        if res:
+            detected_gesture = res
         
         # --- UI Construction ---
         

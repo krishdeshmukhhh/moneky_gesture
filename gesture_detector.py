@@ -13,13 +13,70 @@ class GestureDetector:
         # Let's stick to the prompt's implied simple logic but relax it for "Think".
         return lm[finger_tip_idx].y < lm[finger_pip_idx].y
 
-    def detect_gesture(self, multi_hand_landmarks, face_landmarks=None):
+    def detect_gesture(self, frame, multi_hand_landmarks, face_landmarks=None):
         """
         Analyze logic to return gesture name.
         Args:
+            frame: The current video frame (numpy array) for color analysis.
             multi_hand_landmarks: List of Hand landmarks.
             face_landmarks: Single Face landmarks (if detected).
         """
+        if not multi_hand_landmarks and not face_landmarks:
+            return None
+
+        # 0. GLOBAL PRIORITY: Tongue Out (Mouth Open + Color Check)
+        if face_landmarks:
+            # Landmarks: 13 (Upper Lip Inner), 14 (Lower Lip Inner)
+            # Reference: 10 (Top Head), 152 (Chin) for scale
+            
+            upper_lip = face_landmarks.landmark[13]
+            lower_lip = face_landmarks.landmark[14]
+            head_top = face_landmarks.landmark[10]
+            chin = face_landmarks.landmark[152]
+            
+            mouth_open = np.sqrt((upper_lip.x - lower_lip.x)**2 + (upper_lip.y - lower_lip.y)**2)
+            face_height = np.sqrt((head_top.x - chin.x)**2 + (head_top.y - chin.y)**2)
+            
+            # Ratio Check
+            if face_height > 0:
+                ratio = mouth_open / face_height
+                
+                # Check if mouth is sufficiently open
+                if ratio > 0.03: 
+                    # --- Color Check for Tongue vs Open Mouth ---
+                    # Open mouth = Dark/Black
+                    # Tongue = Pink/Red/Bright
+                    
+                    h, w, _ = frame.shape
+                    # Get center of mouth
+                    mx = int((upper_lip.x + lower_lip.x) / 2 * w)
+                    my = int((upper_lip.y + lower_lip.y) / 2 * h)
+                    
+                    # Safe ROI bounds
+                    roi_size = 5
+                    y1, y2 = max(0, my - roi_size), min(h, my + roi_size)
+                    x1, x2 = max(0, mx - roi_size), min(w, mx + roi_size)
+                    
+                    roi = frame[y1:y2, x1:x2]
+                    
+                    if roi.size > 0:
+                        # BGR format
+                        b_mean = np.mean(roi[:, :, 0])
+                        g_mean = np.mean(roi[:, :, 1])
+                        r_mean = np.mean(roi[:, :, 2])
+                        
+                        # Tongue Logic: 
+                        # 1. Red is dominant (Pink is R+B, Red is R) - so R > G and R > B?
+                        # 2. Not Dark (Open mouth is dark shadows)
+                        
+                        # Debug
+                        # print(f"RGB: {r_mean:.1f}, {g_mean:.1f}, {b_mean:.1f}")
+                        
+                        # Condition: Red dominant and reasonably bright
+                        # Lower threshold for darkness to 60 (shadows are usually < 40-50)
+                        if (r_mean > g_mean) and (r_mean > b_mean + 10) and (r_mean > 60):
+                            return "Tongue"
+
         if not multi_hand_landmarks:
             return None
 

@@ -17,7 +17,8 @@ def load_gesture_images(folder_path):
         "Think": "think.jpg",
         "Mad": "mad_foldedarms.jpg",
         "Idea": "idea.jpg",
-        "Scared": "scared.jpg"
+        "Scared": "scared.jpg",
+        "Tongue": "tongue.jpg"
     }
     
     if not os.path.exists(folder_path):
